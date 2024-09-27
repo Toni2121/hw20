@@ -1,0 +1,52 @@
+CREATE OR REPLACE FUNCTION update_students_in_course()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    UPDATE courses
+    SET total_num_of_students = (
+        SELECT COUNT(DISTINCT student_id)
+        FROM grades
+        WHERE grades.course_id = NEW.course_id
+    )
+    WHERE course_id = NEW.course_id;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER after_grade_insert
+AFTER INSERT ON grades
+FOR EACH ROW
+EXECUTE FUNCTION update_students_in_course();
+
+
+
+CREATE OR REPLACE FUNCTION update_students_on_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    UPDATE courses
+    SET total_num_of_students = (
+        SELECT COUNT(DISTINCT student_id)
+        FROM grades
+        WHERE grades.course_id = OLD.course_id
+    )
+    WHERE course_id = OLD.course_id;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER after_grade_delete
+AFTER DELETE ON grades
+FOR EACH ROW
+EXECUTE FUNCTION update_students_on_delete();
+
+INSERT INTO students (name, email) VALUES ('New Student', 'newstudent@example.com');
+
+
+INSERT INTO grades (student_id, course_id, grade) VALUES (30, 1, 90);
+SELECT * FROM courses WHERE course_id = 1;
+DELETE FROM grades WHERE student_id = 30 AND course_id = 1;
+SELECT * FROM courses WHERE course_id = 1;

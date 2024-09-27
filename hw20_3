@@ -1,0 +1,17 @@
+DROP FUNCTION IF EXISTS highest_grade_return();
+
+CREATE OR REPLACE FUNCTION highest_grade_return()
+RETURNS SETOF students
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT s.*
+    FROM students s
+    JOIN grades g ON s.student_id = g.student_id
+    WHERE g.grade = (SELECT MAX(grade) FROM grades);
+END;
+$$;
+
+
+SELECT * FROM highest_grade_return();
